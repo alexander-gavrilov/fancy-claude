@@ -1,0 +1,16 @@
+{
+  "description": "fancy-statusline — installs the status bar script and wires ~/.claude/settings.json on first use",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/install.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
