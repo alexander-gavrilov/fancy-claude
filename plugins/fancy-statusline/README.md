@@ -29,15 +29,15 @@ Colors shift yellow then red as pressure increases (context usage, rate limits).
 Add the marketplace and install the plugin:
 
 ```bash
-claude marketplace add github:alexander-gavrilov/fancy-claude
+claude plugin marketplace add alexander-gavrilov/fancy-claude
 claude plugin install fancy-statusline@fancy-claude
 ```
 
-The status bar activates on the next Claude Code session start after the first prompt in an installed project.
+The status bar is active from the next Claude Code session after installation.
 
 ## How it works
 
-A `UserPromptSubmit` hook copies `statusline-command.sh` to `~/.claude/` and sets `statusLine` in `~/.claude/settings.json` on first run. Subsequent runs skip the settings update (idempotent) and only refresh the script if the plugin is updated.
+A `UserPromptSubmit` hook runs on every prompt. It always copies `statusline-command.sh` to `~/.claude/` to keep the script current with the installed plugin version. It wires `statusLine` in `~/.claude/settings.json` only once (idempotent after that).
 
 ## MCP tool count
 

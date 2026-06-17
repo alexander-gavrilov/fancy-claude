@@ -11,7 +11,7 @@ A personal Claude Code plugin marketplace by Alexander Gavrilov.
 ## Add this marketplace
 
 ```bash
-claude marketplace add github:alexander-gavrilov/fancy-claude
+claude plugin marketplace add alexander-gavrilov/fancy-claude
 ```
 
 Then install individual plugins:
