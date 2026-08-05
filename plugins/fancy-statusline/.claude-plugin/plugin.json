@@ -1,7 +1,7 @@
 {
   "name": "fancy-statusline",
   "description": "Rich 4-line status bar for Claude Code showing model, effort, context window usage, skills, MCP servers and tools, and rate limits with color-coded pressure indicators.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Alexander Gavrilov",
     "email": "alexander.v.gavrilov@gmail.com"
@@ -9,5 +9,13 @@
   "homepage": "https://github.com/alexander-gavrilov/fancy-claude",
   "repository": "https://github.com/alexander-gavrilov/fancy-claude",
   "license": "MIT",
-  "keywords": ["statusline", "status-bar", "context-window", "mcp", "rate-limits", "monitoring"]
+  "keywords": [
+    "statusline",
+    "status-bar",
+    "context-window",
+    "mcp",
+    "rate-limits",
+    "monitoring",
+    "session"
+  ]
 }

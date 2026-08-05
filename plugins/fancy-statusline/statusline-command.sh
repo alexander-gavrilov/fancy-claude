@@ -22,6 +22,30 @@ countdown_str() {
   fi
 }
 
+elapsed_str() {
+  local secs="$1"
+  [ "$secs" -lt 0 ] && secs=0
+  local d=$(( secs / 86400 ))
+  local h=$(( secs % 86400 / 3600 ))
+  local m=$(( secs % 3600 / 60 ))
+  if   [ "$d" -gt 0 ]; then printf '%dd%02dh' "$d" "$h"
+  elif [ "$h" -gt 0 ]; then printf '%dh%02dm' "$h" "$m"
+  else                      printf '%dm' "$m"
+  fi
+}
+
+# Birth time of a file, falling back to mtime. Prints nothing when unavailable.
+file_birth_epoch() {
+  local f="$1" e=""
+  [ -f "$f" ] || return
+  e=$(stat -f %B "$f" 2>/dev/null || stat -c %W "$f" 2>/dev/null)
+  case "$e" in
+    ''|0|-1) e=$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null) ;;
+  esac
+  case "$e" in ''|*[!0-9]*) return ;; esac
+  printf '%s' "$e"
+}
+
 # ── raw values ────────────────────────────────────────────────────────────────
 
 cwd=$(echo "$input" | jq -r '.cwd // empty')
@@ -29,6 +53,11 @@ cwd=$(echo "$input" | jq -r '.cwd // empty')
 
 project_dir=$(echo "$input" | jq -r '.workspace.project_dir // empty')
 [ -z "$project_dir" ] && project_dir="$cwd"
+
+# Session identity — used to look up start/restart state written by the
+# SessionStart hook (hooks/session-state.sh)
+session_id=$(echo "$input"      | jq -r '.session_id      // empty')
+transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
 
 # Model
 model_id=$(echo "$input"   | jq -r '.model.id           // empty')
@@ -164,9 +193,62 @@ seg() {
   printf "${color}${emoji} ${BOLD}${label}${RESET}${color}${value}${RESET}"
 }
 
+# ── session age + last restart ───────────────────────────────────────────────
+# State is written by the SessionStart hook. When it is absent (hook disabled,
+# or first render before the hook has ever run) we still show the age, derived
+# from the transcript file, and simply omit the restart chip.
+session_chip=""
+if [ "$FANCY_STATUSLINE_SESSION" != "off" ]; then
+  sess_started=""
+  sess_event=""
+  sess_event_at=""
+  sess_restarts=0
+
+  case "$session_id" in
+    ''|*[!A-Za-z0-9._-]*) : ;;
+    *)
+      sess_state="$HOME/.claude/fancy-statusline/sessions/${session_id}.json"
+      if [ -f "$sess_state" ]; then
+        sess_started=$(jq -r   '.started       // empty' "$sess_state" 2>/dev/null)
+        sess_event=$(jq -r     '.last_event    // empty' "$sess_state" 2>/dev/null)
+        sess_event_at=$(jq -r  '.last_event_at // empty' "$sess_state" 2>/dev/null)
+        sess_restarts=$(jq -r  '.restarts      // 0'     "$sess_state" 2>/dev/null)
+      fi
+      ;;
+  esac
+
+  case "$sess_started"  in ''|*[!0-9]*) sess_started=$(file_birth_epoch "$transcript_path") ;; esac
+  case "$sess_restarts" in ''|*[!0-9]*) sess_restarts=0 ;; esac
+
+  if [ -n "$sess_started" ]; then
+    now_epoch=$(date +%s)
+    session_chip="${C_WHITE}\xF0\x9F\x95\x92 ${BOLD}up:${RESET}${C_WHITE}$(elapsed_str $(( now_epoch - sess_started )))${RESET}"
+  fi
+
+  if [ "$sess_restarts" -gt 0 ] && [ -n "$sess_event" ]; then
+    case "$sess_event" in
+      resume)  ev_label="resumed"   ;;
+      clear)   ev_label="cleared"   ;;
+      compact) ev_label="compacted" ;;
+      *)       ev_label="$sess_event" ;;
+    esac
+    ev_str="${BOLD}${ev_label}${RESET}${C_YELLOW}"
+    case "$sess_event_at" in
+      ''|*[!0-9]*) : ;;
+      *) ev_time=$(date -r "$sess_event_at" '+%H:%M' 2>/dev/null || date -d "@${sess_event_at}" '+%H:%M' 2>/dev/null)
+         [ -n "$ev_time" ] && ev_str="${ev_str}:${ev_time}" ;;
+    esac
+    [ "$sess_restarts" -gt 1 ] && ev_str="${ev_str} \xC3\x97${sess_restarts}"
+    [ -n "$session_chip" ] && session_chip="${session_chip}${SEP}"
+    session_chip="${session_chip}${C_YELLOW}\xE2\x9F\xB3 ${ev_str}${RESET}"
+  fi
+fi
+
 # ── LINE 1 — location ────────────────────────────────────────────────────────
-printf "${C_BRIGHT_GREEN}%s@%s${RESET}:${C_BRIGHT_BLUE}%s${RESET}\n" \
+printf "${C_BRIGHT_GREEN}%s@%s${RESET}:${C_BRIGHT_BLUE}%s${RESET}" \
   "$(whoami)" "$(hostname -s)" "$cwd"
+[ -n "$session_chip" ] && printf "%b" "${SEP}${session_chip}"
+printf "\n"
 
 # ── LINE 2 — model + effort + mode + context summary ─────────────────────────
 line2=""

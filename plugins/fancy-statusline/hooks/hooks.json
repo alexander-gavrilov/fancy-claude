@@ -1,5 +1,5 @@
 {
-  "description": "fancy-statusline — installs the status bar script and wires ~/.claude/settings.json on first use",
+  "description": "fancy-statusline — installs the status bar script and wires ~/.claude/settings.json on first use, and records session start/restart times",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -7,6 +7,17 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/install.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-state.sh\"",
             "timeout": 5
           }
         ]
