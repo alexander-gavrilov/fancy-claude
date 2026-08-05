@@ -6,7 +6,7 @@ A personal Claude Code plugin marketplace by Alexander Gavrilov.
 
 | Plugin | Description |
 |---|---|
-| [fancy-statusline](plugins/fancy-statusline/) | Rich 4-line status bar with model, context, MCP, and rate limit info |
+| [fancy-statusline](plugins/fancy-statusline/) | Rich 5-line status bar with model, context, MCP, and rate limit info |
 
 ## Add this marketplace
 
