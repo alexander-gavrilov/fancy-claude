@@ -1,20 +1,22 @@
 # fancy-statusline
 
-A rich 4-line status bar for Claude Code.
+A rich 5-line status bar for Claude Code.
 
 ## What it shows
 
 ```
-Line 1  alexander@host:/current/dir | 🕒 up:17h50m | ⟳ compacted:09:15 ×2
-Line 2  🤖 model:sonnet-4-6 ⚖ auto | 📊 ctx:200k | 📈 used:23% | 📉 rem:77%
-Line 3  🔧 skills:8 (5.0% ctx) | 🔌 mcp:3 srv / ~60 tools (~12.0% ctx)
-Line 4  ⏱️ 5h:43% ↺14:30 EET (1h22m) | 📅 7d:18% ↺Fri 09:00 EET (3d14h)
+Line 1  alexander@host | 🕒 up:17h50m | ⟳ compacted:09:15 ×2
+Line 2  /current/dir
+Line 3  🤖 model:sonnet-4-6 ⚖ auto | 📊 ctx:200k | 📈 used:23% | 📉 rem:77%
+Line 4  🔧 skills:8 (5.0% ctx) | 🔌 mcp:3 srv / ~60 tools (~12.0% ctx)
+Line 5  ⏱️ 5h:43% ↺14:30 EET (1h22m) | 📅 7d:18% ↺Fri 09:00 EET (3d14h)
 ```
 
-**Line 1** — user@host, current directory, session age, and last restart  
-**Line 2** — model ID, effort level (🐢 low · 🏃 medium · 🚀 high · 🔥 xhigh · ⚡ max · ⚖ auto), context size, used %, remaining %  
-**Line 3** — loaded skills with estimated context %, MCP servers with estimated tool count and context %  
-**Line 4** — 5-hour and 7-day rate limit usage, local reset time, and countdown  
+**Line 1** — user@host, session age, and last restart  
+**Line 2** — current working directory  
+**Line 3** — model ID, effort level (🐢 low · 🏃 medium · 🚀 high · 🔥 xhigh · ⚡ max · ⚖ auto), context size, used %, remaining %  
+**Line 4** — loaded skills with estimated context %, MCP servers with estimated tool count and context %  
+**Line 5** — 5-hour and 7-day rate limit usage, local reset time, and countdown  
 
 Colors shift yellow then red as pressure increases (context usage, rate limits).
 

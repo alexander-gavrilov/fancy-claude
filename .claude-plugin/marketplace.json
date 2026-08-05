@@ -8,7 +8,7 @@
     {
       "name": "fancy-statusline",
       "source": "./plugins/fancy-statusline",
-      "description": "Rich 4-line status bar for Claude Code showing model, effort, context window usage, skills, MCP servers and tools, and rate limits with color-coded pressure indicators."
+      "description": "Rich 5-line status bar for Claude Code showing model, effort, context window usage, skills, MCP servers and tools, and rate limits with color-coded pressure indicators."
     }
   ]
 }

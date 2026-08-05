@@ -244,13 +244,16 @@ if [ "$FANCY_STATUSLINE_SESSION" != "off" ]; then
   fi
 fi
 
-# ── LINE 1 — location ────────────────────────────────────────────────────────
-printf "${C_BRIGHT_GREEN}%s@%s${RESET}:${C_BRIGHT_BLUE}%s${RESET}" \
-  "$(whoami)" "$(hostname -s)" "$cwd"
+# ── LINE 1 — machine identity ────────────────────────────────────────────────
+printf "${C_BRIGHT_GREEN}%s@%s${RESET}" \
+  "$(whoami)" "$(hostname -s)"
 [ -n "$session_chip" ] && printf "%b" "${SEP}${session_chip}"
 printf "\n"
 
-# ── LINE 2 — model + effort + mode + context summary ─────────────────────────
+# ── LINE 2 — working directory ───────────────────────────────────────────────
+printf "${C_BRIGHT_BLUE}%s${RESET}\n" "$cwd"
+
+# ── LINE 3 — model + effort + mode + context summary ─────────────────────────
 line2=""
 
 # Model chip
@@ -305,7 +308,7 @@ fi
 
 [ -n "$line2" ] && printf "%b\n" "$line2"
 
-# ── LINE 3 — skills + MCP ────────────────────────────────────────────────────
+# ── LINE 4 — skills + MCP ────────────────────────────────────────────────────
 if [ -n "$ctx_total" ]; then
   line3=""
 
@@ -335,7 +338,7 @@ if [ -n "$ctx_total" ]; then
   [ -n "$line3" ] && printf "%b\n" "$line3"
 fi
 
-# ── LINE 4 — rate limits ──────────────────────────────────────────────────────
+# ── LINE 5 — rate limits ──────────────────────────────────────────────────────
 line4=""
 
 # 5-hour limit
