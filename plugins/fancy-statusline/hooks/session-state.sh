@@ -67,6 +67,28 @@ elif [ -f "$state_file" ]; then
   last_event_at=$(jq -r '.last_event_at // empty' "$state_file" 2>/dev/null)
 fi
 
+# The worker and the prompt hook write topic fields into the same file, and the
+# jq -n below rewrites it wholesale — so carry them across. A restart that ends
+# the conversation (clear, compact) ends the topic with it; a resume does not.
+topic=$(jq -r        '.topic          // empty' "$state_file" 2>/dev/null)
+topic_source=$(jq -r '.topic_source   // empty' "$state_file" 2>/dev/null)
+topic_at=$(jq -r     '.topic_at       // empty' "$state_file" 2>/dev/null)
+prompts=$(jq -r      '.prompts        // 0'     "$state_file" 2>/dev/null)
+topic_at_prompt=$(jq -r '.topic_at_prompt // 0' "$state_file" 2>/dev/null)
+case "$prompts"         in ''|*[!0-9]*) prompts=0         ;; esac
+case "$topic_at_prompt" in ''|*[!0-9]*) topic_at_prompt=0 ;; esac
+case "$topic_at"        in ''|*[!0-9]*) topic_at=""       ;; esac
+
+case "$source" in
+  clear|compact)
+    topic=""
+    topic_source="auto"
+    topic_at=""
+    prompts=0
+    topic_at_prompt=0
+    ;;
+esac
+
 tmp=$(mktemp) || exit 0
 if jq -n \
     --arg  sid   "$session_id" \
@@ -74,12 +96,22 @@ if jq -n \
     --arg  ev    "$last_event" \
     --arg  evat  "$last_event_at" \
     --argjson n  "$restarts" \
+    --arg  tp    "$topic" \
+    --arg  tsrc  "$topic_source" \
+    --arg  tat   "$topic_at" \
+    --argjson pc "$prompts" \
+    --argjson ta "$topic_at_prompt" \
     '{
-       session_id:    $sid,
-       started:       $st,
-       last_event:    (if $ev   == "" then null else $ev             end),
-       last_event_at: (if $evat == "" then null else ($evat|tonumber) end),
-       restarts:      $n
+       session_id:      $sid,
+       started:         $st,
+       last_event:      (if $ev   == "" then null else $ev             end),
+       last_event_at:   (if $evat == "" then null else ($evat|tonumber) end),
+       restarts:        $n,
+       topic:           (if $tp   == "" then null else $tp             end),
+       topic_source:    (if $tsrc == "" then "auto" else $tsrc         end),
+       topic_at:        (if $tat  == "" then null else ($tat|tonumber)  end),
+       prompts:         $pc,
+       topic_at_prompt: $ta
      }' \
     > "$tmp" 2>/dev/null; then
   mv "$tmp" "$state_file"
