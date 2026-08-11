@@ -1,7 +1,7 @@
 {
   "name": "fancy-statusline",
-  "description": "Rich 5-line status bar for Claude Code showing model, effort, context window usage, skills, MCP servers and tools, and rate limits with color-coded pressure indicators.",
-  "version": "1.2.0",
+  "description": "Rich 6-line status bar for Claude Code showing the session topic, model, effort, context window usage, skills, MCP servers and tools, and rate limits with color-coded pressure indicators.",
+  "version": "1.3.0",
   "author": {
     "name": "Alexander Gavrilov",
     "email": "alexander.v.gavrilov@gmail.com"
@@ -16,6 +16,7 @@
     "mcp",
     "rate-limits",
     "monitoring",
-    "session"
+    "session",
+    "topic"
   ]
 }

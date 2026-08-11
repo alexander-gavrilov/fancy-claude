@@ -1,6 +1,17 @@
 #!/bin/bash
 input=$(cat)
 
+# Shared topic helpers. install.sh mirrors the plugin's lib/ next to the copied
+# status line script, so both the in-plugin and the installed path are tried.
+for _topic_lib in "${CLAUDE_PLUGIN_ROOT:-}/lib/topic-lib.sh" \
+                  "$HOME/.claude/fancy-statusline/lib/topic-lib.sh"; do
+  if [ -f "$_topic_lib" ]; then
+    # shellcheck source=lib/topic-lib.sh
+    . "$_topic_lib"
+    break
+  fi
+done
+
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 countdown_str() {
@@ -61,7 +72,6 @@ transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
 
 # Model
 model_id=$(echo "$input"   | jq -r '.model.id           // empty')
-model_name=$(echo "$input" | jq -r '.model.display_name // empty')
 model_short="${model_id#claude-}"   # "claude-sonnet-4-6" → "sonnet-4-6"
 
 # Effort / thinking
@@ -75,7 +85,6 @@ output_style=$(echo "$input" | jq -r '.output_style.name // empty')
 ctx_total=$(echo "$input"   | jq -r '.context_window.context_window_size     // empty')
 ctx_used_pct=$(echo "$input" | jq -r '.context_window.used_percentage        // empty')
 ctx_rem_pct=$(echo "$input"  | jq -r '.context_window.remaining_percentage   // empty')
-ctx_used_tok=$(echo "$input" | jq -r '.context_window.total_input_tokens     // empty')
 
 # Skills — count .md / .yaml / .yml files under .agents/skills/
 skills_count=0
@@ -167,8 +176,6 @@ five_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at        // e
 week_pct=$(echo "$input"   | jq -r '.rate_limits.seven_day.used_percentage  // empty')
 week_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at        // empty')
 
-TZ_ABBR=$(date +%Z)
-
 # ── ANSI palette ──────────────────────────────────────────────────────────────
 RESET="\033[0m"
 BOLD="\033[1m"
@@ -183,6 +190,7 @@ C_BLUE="\033[34m"       # 7d limit
 C_RED="\033[31m"        # over-limit warnings
 C_BRIGHT_GREEN="\033[1;32m"
 C_BRIGHT_BLUE="\033[1;34m"
+C_BRIGHT_MAGENTA="\033[1;35m"
 
 SEP="${DIM} | ${RESET}"
 
@@ -242,6 +250,31 @@ if [ "$FANCY_STATUSLINE_SESSION" != "off" ]; then
     [ -n "$session_chip" ] && session_chip="${session_chip}${SEP}"
     session_chip="${session_chip}${C_YELLOW}\xE2\x9F\xB3 ${ev_str}${RESET}"
   fi
+fi
+
+# ── LINE 0 — session topic ───────────────────────────────────────────────────
+# Rendering only ever reads the cache written by hooks/topic-worker.sh. It never
+# calls a model and never blocks. When there is no topic the line is omitted
+# entirely, so the bar does not jump while the first summary is still running.
+topic=""
+if command -v topic_sanitize >/dev/null 2>&1; then
+  topic_env="${FANCY_STATUSLINE_TOPIC:-}"
+  if [ "$topic_env" = "off" ]; then
+    topic=""
+  elif [ -n "$topic_env" ]; then
+    topic=$(topic_sanitize "$topic_env")
+  else
+    topic_state=$(topic_state_path "$session_id" 2>/dev/null)
+    if [ -n "$topic_state" ] && [ -f "$topic_state" ]; then
+      if [ "$(topic_state_read "$topic_state" topic_source auto)" != "off" ]; then
+        topic=$(topic_sanitize "$(topic_state_read "$topic_state" topic)")
+      fi
+    fi
+  fi
+fi
+
+if [ -n "$topic" ]; then
+  printf "${C_BRIGHT_MAGENTA}\xF0\x9F\x8F\xB7\xEF\xB8\x8F  ${BOLD}topic:${RESET}${C_BRIGHT_MAGENTA}%s${RESET}\n" "$topic"
 fi
 
 # ── LINE 1 — machine identity ────────────────────────────────────────────────

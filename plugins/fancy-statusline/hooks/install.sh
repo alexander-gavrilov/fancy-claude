@@ -10,6 +10,14 @@ SCRIPT_DEST="$HOME/.claude/statusline-command.sh"
 cp "$SCRIPT_SRC" "$SCRIPT_DEST" 2>/dev/null || exit 0
 chmod +x "$SCRIPT_DEST"
 
+# The status line sources lib/topic-lib.sh. The copy in ~/.claude/ has no plugin
+# root to resolve, so mirror the library next to it and keep it current too.
+LIB_SRC="${CLAUDE_PLUGIN_ROOT}/lib/topic-lib.sh"
+LIB_DEST_DIR="$HOME/.claude/fancy-statusline/lib"
+if [ -f "$LIB_SRC" ]; then
+  mkdir -p "$LIB_DEST_DIR" 2>/dev/null && cp "$LIB_SRC" "$LIB_DEST_DIR/topic-lib.sh" 2>/dev/null
+fi
+
 # Wire settings.json only if not already pointing at our script
 if [ -f "$SETTINGS" ]; then
   if ! jq -e '.statusLine.command' "$SETTINGS" 2>/dev/null | grep -q "statusline-command.sh"; then
