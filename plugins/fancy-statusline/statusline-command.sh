@@ -72,7 +72,6 @@ transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
 
 # Model
 model_id=$(echo "$input"   | jq -r '.model.id           // empty')
-model_name=$(echo "$input" | jq -r '.model.display_name // empty')
 model_short="${model_id#claude-}"   # "claude-sonnet-4-6" → "sonnet-4-6"
 
 # Effort / thinking
@@ -86,7 +85,6 @@ output_style=$(echo "$input" | jq -r '.output_style.name // empty')
 ctx_total=$(echo "$input"   | jq -r '.context_window.context_window_size     // empty')
 ctx_used_pct=$(echo "$input" | jq -r '.context_window.used_percentage        // empty')
 ctx_rem_pct=$(echo "$input"  | jq -r '.context_window.remaining_percentage   // empty')
-ctx_used_tok=$(echo "$input" | jq -r '.context_window.total_input_tokens     // empty')
 
 # Skills — count .md / .yaml / .yml files under .agents/skills/
 skills_count=0
@@ -177,8 +175,6 @@ five_pct=$(echo "$input"   | jq -r '.rate_limits.five_hour.used_percentage  // e
 five_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at        // empty')
 week_pct=$(echo "$input"   | jq -r '.rate_limits.seven_day.used_percentage  // empty')
 week_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at        // empty')
-
-TZ_ABBR=$(date +%Z)
 
 # ── ANSI palette ──────────────────────────────────────────────────────────────
 RESET="\033[0m"
