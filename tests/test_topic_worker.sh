@@ -41,6 +41,24 @@ stub_bin claude 'printf "\033[31mred\033[0m topic\n"'
 run_worker wsess
 assert_eq "model output is sanitized" "$(jq -r '.topic' "$sf")" "red topic"
 
+# Another plugin may decorate the reply itself, not just the stream around it.
+# Observed in the wild: a message-timestamp plugin prefixing every reply.
+printf '{"topic":"previous","topic_source":"auto"}' > "$sf"
+stub_bin claude 'echo "[2026-08-11 12:40:48] decorated topic"'
+run_worker wsess
+assert_eq "a decorating prefix is stripped" "$(jq -r '.topic' "$sf")" "decorated topic"
+
+printf '{"topic":"previous","topic_source":"auto"}' > "$sf"
+stub_bin claude 'echo "[12:40] [info] two prefixes"'
+run_worker wsess
+assert_eq "several prefixes are stripped" "$(jq -r '.topic' "$sf")" "two prefixes"
+
+printf '{"topic":"previous","topic_source":"auto"}' > "$sf"
+stub_bin claude 'echo "brackets [inside] a topic survive"'
+run_worker wsess
+assert_eq "only leading brackets are stripped" \
+  "$(jq -r '.topic' "$sf")" "brackets [inside] a topic survive"
+
 # failures leave the previous topic alone
 printf '{"topic":"previous","topic_source":"auto"}' > "$sf"
 stub_bin claude 'exit 1'

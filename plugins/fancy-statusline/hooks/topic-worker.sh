@@ -84,6 +84,13 @@ run_claude() {
 
 answer=$(run_claude) || exit 0
 
+# The reply is not guaranteed to be the model's words alone. Other plugins
+# decorate assistant messages, and the decoration lands inside the reply itself
+# rather than around it — a message-timestamp plugin turns "parser fix" into
+# "[2026-08-11 12:40:48] parser fix". Drop leading bracketed prefixes; a topic
+# never legitimately opens with one.
+answer=$(printf '%s' "$answer" | sed -E 's/^[[:space:]]*(\[[^]]*\][[:space:]]*)+//')
+
 topic=$(topic_sanitize "$answer")
 [ -z "$topic" ] && exit 0
 
