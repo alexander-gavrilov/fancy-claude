@@ -70,12 +70,12 @@ sandbox_cleanup() {
 
 # Put a stub executable named $1 on PATH, with $2 as its body.
 stub_bin() {
-  [ -z "$STUB_DIR" ] && { STUB_DIR=$(mktemp -d); export PATH="$STUB_DIR:$PATH"; }
+  [ -z "${STUB_DIR:-}" ] && { STUB_DIR=$(mktemp -d); export PATH="$STUB_DIR:$PATH"; }
   printf '#!/bin/bash\n%s\n' "$2" > "$STUB_DIR/$1"
   chmod +x "$STUB_DIR/$1"
 }
 
 stub_cleanup() {
-  [ -n "$STUB_DIR" ] && rm -rf "$STUB_DIR"
+  [ -n "${STUB_DIR:-}" ] && rm -rf "$STUB_DIR"
   STUB_DIR=""
 }
