@@ -57,6 +57,40 @@ file_birth_epoch() {
   printf '%s' "$e"
 }
 
+# The name other sessions address this one by (`@<name>`). Claude Code keeps a
+# registry of live sessions in ~/.claude/sessions/<pid>.json, keyed by pid and
+# carrying the session id; the status line only ever reads it. Prints nothing
+# when there is no matching entry.
+session_name_lookup() {
+  local sid="$1" dir="$HOME/.claude/sessions"
+  case "$sid" in
+    ''|*[!A-Za-z0-9._-]*) return ;;
+  esac
+  [ -d "$dir" ] || return
+
+  local best_name="" best_up=-1 best_live=0
+  local up pid nm live
+  while IFS=$'\t' read -r up pid nm; do
+    [ -n "$nm" ] || continue
+    case "$up"  in ''|*[!0-9]*) up=0  ;; esac
+    case "$pid" in ''|*[!0-9]*) pid=0 ;; esac
+    # A resume leaves the previous entry behind under the same session id, so a
+    # live process wins over a dead one however fresh the dead record looks.
+    live=0
+    if [ "$pid" -gt 0 ] && kill -0 "$pid" 2>/dev/null; then live=1; fi
+    if [ "$live" -gt "$best_live" ] ||
+       { [ "$live" -eq "$best_live" ] && [ "$up" -gt "$best_up" ]; }; then
+      best_live="$live"; best_up="$up"; best_name="$nm"
+    fi
+  done < <(jq -r --arg sid "$sid" \
+             'select(.sessionId == $sid) | [.updatedAt // 0, .pid // 0, .name // ""] | @tsv' \
+             "$dir"/*.json 2>/dev/null)
+
+  # Registry data on its way to a terminal. Keep only what an address can be
+  # made of, so nothing inside the name can move the cursor or repaint.
+  printf '%s' "$best_name" | LC_ALL=C tr -cd 'A-Za-z0-9._-' | cut -c 1-40
+}
+
 # ── raw values ────────────────────────────────────────────────────────────────
 
 cwd=$(echo "$input" | jq -r '.cwd // empty')
@@ -252,10 +286,24 @@ if [ "$FANCY_STATUSLINE_SESSION" != "off" ]; then
   fi
 fi
 
-# ── LINE 0 — session topic ───────────────────────────────────────────────────
-# Rendering only ever reads the cache written by hooks/topic-worker.sh. It never
-# calls a model and never blocks. When there is no topic the line is omitted
-# entirely, so the bar does not jump while the first summary is still running.
+# ── LINE 0 — session name + topic ────────────────────────────────────────────
+# The name comes from the session registry, the topic from the cache written by
+# hooks/topic-worker.sh. Rendering never calls a model and never blocks. Each
+# chip is omitted when its source has nothing to say, and with neither the line
+# is not printed at all — so the bar does not jump while the first topic summary
+# is still running.
+session_name=""
+session_ref=""
+if [ "$FANCY_STATUSLINE_NAME" != "off" ]; then
+  session_name=$(session_name_lookup "$session_id")
+  if [ -n "$session_name" ]; then
+    case "$session_id" in
+      ''|*[!A-Za-z0-9._-]*) : ;;
+      *) session_ref="${session_id:0:8}" ;;
+    esac
+  fi
+fi
+
 topic=""
 if command -v topic_sanitize >/dev/null 2>&1; then
   topic_env="${FANCY_STATUSLINE_TOPIC:-}"
@@ -273,8 +321,26 @@ if command -v topic_sanitize >/dev/null 2>&1; then
   fi
 fi
 
+# The name and the topic are arbitrary data, so they reach the terminal through
+# %s while the colors live in the format string, the way the cwd line does.
+line0_fmt=""
+line0_args=()
+if [ -n "$session_name" ]; then
+  line0_fmt="${C_WHITE}\xF0\x9F\xAA\xAA ${BOLD}@%s${RESET}"
+  line0_args+=("$session_name")
+  if [ -n "$session_ref" ]; then
+    line0_fmt="${line0_fmt}${DIM} [%s]${RESET}"
+    line0_args+=("$session_ref")
+  fi
+fi
 if [ -n "$topic" ]; then
-  printf "${C_BRIGHT_MAGENTA}\xF0\x9F\x8F\xB7\xEF\xB8\x8F  ${BOLD}topic:${RESET}${C_BRIGHT_MAGENTA}%s${RESET}\n" "$topic"
+  [ -n "$line0_fmt" ] && line0_fmt="${line0_fmt}${SEP}"
+  line0_fmt="${line0_fmt}${C_BRIGHT_MAGENTA}\xF0\x9F\x8F\xB7\xEF\xB8\x8F  ${BOLD}topic:${RESET}${C_BRIGHT_MAGENTA}%s${RESET}"
+  line0_args+=("$topic")
+fi
+if [ -n "$line0_fmt" ]; then
+  # shellcheck disable=SC2059  # the format is assembled from constants above
+  printf "${line0_fmt}\n" "${line0_args[@]}"
 fi
 
 # ── LINE 1 — machine identity ────────────────────────────────────────────────
