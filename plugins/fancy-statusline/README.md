@@ -5,7 +5,7 @@ A rich 6-line status bar for Claude Code.
 ## What it shows
 
 ```
-Line 1  🏷️  topic: fancy-statusline topic chip
+Line 1  🪪 @fancy-claude-98 [6ba9f8b9] | 🏷️  topic: fancy-statusline topic chip
 Line 2  alexander@host | 🕒 up:17h50m | ⟳ compacted:09:15 ×2
 Line 3  /current/dir
 Line 4  🤖 model:sonnet-4-6 ⚖ auto | 📊 ctx:200k | 📈 used:23% | 📉 rem:77%
@@ -13,7 +13,7 @@ Line 5  🔧 skills:8 (5.0% ctx) | 🔌 mcp:3 srv / ~60 tools (~12.0% ctx)
 Line 6  ⏱️ 5h:43% ↺14:30 EET (1h22m) | 📅 7d:18% ↺Fri 09:00 EET (3d14h)
 ```
 
-**Line 1** — the session topic  
+**Line 1** — the name this session is addressed by, and the session topic  
 **Line 2** — user@host, session age, and last restart  
 **Line 3** — current working directory  
 **Line 4** — model ID, effort level (🐢 low · 🏃 medium · 🚀 high · 🔥 xhigh · ⚡ max · ⚖ auto), context size, used %, remaining %  
@@ -43,6 +43,27 @@ occurred:
 ```
 
 Set `FANCY_STATUSLINE_SESSION=off` to disable both the chip and the chat line.
+
+## Session name
+
+Other sessions reach this one by a short name, not by its UUID — `@fancy-claude-98`
+in `SendMessage` and in the `ListAgents` listing. A session is told every *other*
+session's name and never its own, so the chip prints it:
+
+```
+🪪 @fancy-claude-98 [6ba9f8b9]
+```
+
+The name in brackets is the first eight characters of the session id. It is there
+because `ListAgents` asks for it when two sessions in the registry answer to the
+same name.
+
+The name is read from Claude Code's own registry of live sessions,
+`~/.claude/sessions/<pid>.json`, matched by session id. Nothing is written and no
+model is called. When no entry matches — an older Claude Code, a non-interactive
+run, a pruned directory — the chip is simply absent.
+
+Set `FANCY_STATUSLINE_NAME=off` to hide it.
 
 ## Session topic
 
@@ -76,6 +97,7 @@ Resuming a session keeps it.
 
 | variable | default | effect |
 |----------|---------|--------|
+| `FANCY_STATUSLINE_NAME` | unset | `off` hides the session name chip |
 | `FANCY_STATUSLINE_TOPIC` | unset | `off` disables the feature; any other value is used as a fixed topic |
 | `FANCY_STATUSLINE_TOPIC_EVERY` | `5` | prompts between automatic recomputations |
 | `FANCY_STATUSLINE_TOPIC_WIDTH` | `60` | maximum rendered length |
@@ -112,6 +134,15 @@ Code session that fires the same hook, the worker exports
 per-session lock is the second line of defence. Topic text is stripped of ANSI
 and control characters — in both real and backslash-escaped form — before it is
 stored or printed.
+
+The name chip needs no hook. On every render the status bar reads the session
+registry Claude Code maintains at `~/.claude/sessions/<pid>.json` and picks the
+entry whose `sessionId` matches its input. A resume leaves the previous entry
+behind under the same session id, so entries with a live process win over ones
+whose process is gone, and the freshest `updatedAt` breaks the remaining tie. The
+`name` field is used as-is — never reassembled from the directory name, since a
+renamed session reports something else entirely — and reduced to the characters
+an address can be made of before printing.
 
 ## MCP tool count
 

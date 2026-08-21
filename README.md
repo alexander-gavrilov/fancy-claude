@@ -6,7 +6,7 @@ A personal Claude Code plugin marketplace by Alexander Gavrilov.
 
 | Plugin | Description |
 |---|---|
-| [fancy-statusline](plugins/fancy-statusline/) | Rich 6-line status bar leading with an auto-derived session topic (`FANCY_STATUSLINE_TOPIC=off` to disable), plus model, context, MCP, and rate limit info |
+| [fancy-statusline](plugins/fancy-statusline/) | Rich 6-line status bar leading with the session's `@`-addressable name and an auto-derived topic (`FANCY_STATUSLINE_TOPIC=off` to disable), plus model, context, MCP, and rate limit info |
 
 ## Add this marketplace
 
